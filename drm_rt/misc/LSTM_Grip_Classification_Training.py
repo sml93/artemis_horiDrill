@@ -4,6 +4,8 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 
+from model import GripLSTM
+
 # Load dataset
 data = np.load("grip_data.npz")
 X = data["data"]  # shape (samples, timesteps, features)
@@ -21,18 +23,18 @@ test_dataset = TensorDataset(X_tensor[train_size:], y_tensor[train_size:])
 train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=16)
 
-# Define LSTM model
-class GripLSTM(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers, num_classes):
-        super(GripLSTM, self).__init__()
-        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
-        self.fc = nn.Linear(hidden_size, num_classes)
+# # Define LSTM model
+# class GripLSTM(nn.Module):
+#     def __init__(self, input_size, hidden_size, num_layers, num_classes):
+#         super(GripLSTM, self).__init__()
+#         self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
+#         self.fc = nn.Linear(hidden_size, num_classes)
 
-    def forward(self, x):
-        out, _ = self.lstm(x)
-        out = out[:, -1, :]  # Take the output at last timestep
-        out = self.fc(out)
-        return out
+#     def forward(self, x):
+#         out, _ = self.lstm(x)
+#         out = out[:, -1, :]  # Take the output at last timestep
+#         out = self.fc(out)
+#         return out
 
 # Model, loss, optimizer
 input_size = X.shape[2]
@@ -58,6 +60,11 @@ for epoch in range(EPOCHS):
 
     acc = correct / total
     print(f"Epoch {epoch+1}/{EPOCHS}, Accuracy: {acc:.4f}")
+
+# # Save the trained model
+# torch.save(model.state_dict(), "grip_lstm_model.pth")
+# print("Model saved to grip_lstm_pth")
+
 
 # Evaluate on test set
 model.eval()
