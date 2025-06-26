@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 from model import GripLSTM  # assumes model class is saved in model.py
+from sensorRead import sensingReader
 import time
 
 # Load trained model
@@ -13,18 +14,23 @@ model = GripLSTM(input_size, hidden_size, num_layers, num_classes)
 model.load_state_dict(torch.load("grip_lstm_model.pth"))  # load trained weights
 model.eval()
 
-# Dummy function to collect real sensor data
+# Function to collect real sensor data
 def read_sensor_window(duration_sec=3, freq_hz=50):
     steps = int(duration_sec * freq_hz)
     sensor_data = []
+    reader = sensingReader()
+    imu_roll, imu_pitch, z, fsr = reader.start_reading()
+    reader.start_reading()
     for _ in range(steps):
         # Replace this with actual sensor reading code
         sample = [
-            get_fsr(),                # Normalized FSR
-            get_imu_pitch(),          # degrees or radians
-            get_imu_roll(),
-            get_spring_deflection(),  # mm or normalized
-            get_drill_motor_current() # Amps
+            fsr,                        # Normalized FSR        to detect grip strength
+            # get_imu_pitch(),          # degrees or radians    to read imu pitch
+            # get_imu_roll(),           # degrees or radians    to read imu roll
+            imu_pitch,                  # degrees or radians    to read imu pitch
+            imu_roll,                   # degrees or radians    to read imu roll
+            # get_spring_deflection(),  # mm or normalized
+            get_drill_motor_current()   # Amps                  to a
         ]
         sensor_data.append(sample)
         time.sleep(1 / freq_hz)
@@ -41,7 +47,7 @@ def classify_grip(sensor_window):
 # Example usage
 if __name__ == "__main__":
     print("Waiting for perch contact...")
-    while not contact_detected():
+    while not contact_detected():   # use IMU or pressure spike to detect contact
         time.sleep(0.1)
 
     print("Perch detected. Collecting sensor data...")
@@ -50,7 +56,7 @@ if __name__ == "__main__":
 
     if result == 1:
         print("Grip is stable. Proceed with drilling.")
-        start_drilling_sequence()
+        start_drilling_sequence()   # trigger drilling command
     else:
         print("Grip is unstable. Aborting drilling.")
-        retry_perching_or_adjust()
+        retry_perching_or_adjust()  # readjust pose or reattempt to grip
